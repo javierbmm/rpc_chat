@@ -20,12 +20,13 @@ write_0_svc(char **argp, struct svc_req *rqstp)
 
     if(fptr == NULL) {
         //printf("Error!");
-        result = ERROR;
+        result = _ERROR;
         return &result;
     }
     printf("Writing: %s", *argp);
+    fflush(stdout);
     fprintf(fptr,"%s", *argp);
-	result = OK;
+	result = _OK;
 
 	fclose(fptr);
 	return &result;
