@@ -15,23 +15,10 @@
 /* Global variables */
 WINDOW *output_win, *input_win;
 CLIENT *clnt;
+char *username = 0, *username_out = 0;
 /* End of Global variables */
+
 enum _MyBool {_false=0, _true=1};
-
-int get_option() {
-    printf("\nSelect one option:\n\t1- Write\n\t2- Read chat\n\t3- Exit\n");
-    int option;
-
-    scanf("%d", &option);
-
-    return option;
-}
-
-enum _MyBool invalid_option(int option) {
-    enum _MyBool invalid = (option > 3 || option < 1);
-
-    return invalid;
-}
 
 void write_chat(CLIENT* clnt, char * line) {
     status  *result_1;
@@ -39,14 +26,13 @@ void write_chat(CLIENT* clnt, char * line) {
     size_t len = 0;
     char aux;
 
-    printf("%s\n", line);
-    int line_size = sizeof(line);
+    int line_size = sizeof(username) + sizeof(line);
     write_0_arg = (char*) malloc(sizeof(char*) * (line_size+1));
-    strcpy(write_0_arg, line);
+    strcpy(write_0_arg, username_out);
+    strcat(write_0_arg, line);
     strcat(write_0_arg, "\n");
     //    write_0_arg[line_size+1] = '\0';
-//    write_0_arg[line_size+2] = '\0';
-    printf("size: %d, formated: %s\n", line_size, write_0_arg);
+    //    write_0_arg[line_size+2] = '\0';
     result_1 = write_0(&write_0_arg, clnt);
     if (result_1 == (status *) NULL) {
         clnt_perror (clnt, "call failed");
@@ -61,7 +47,7 @@ char* read_chat(CLIENT* clnt) {
 
     result_2 = getchat_0((void*)&getchat_0_arg, clnt);
     if (result_2 == (char **) NULL) {
-        clnt_perror (clnt, "call failed");
+        clnt_perror (clnt, "call failed oopsie");
     }
 
     return *result_2;
@@ -98,25 +84,13 @@ rpcchat_0(char *host)
 	}
 #endif	/* DEBUG */
 
-    int option = 1;
-
     printf("hi\n");
-    char hola[] = "holahola";
-    write_chat(clnt, hola);
-    getchar();
+
+    // getchar();
     draw_chat();
     chat(clnt);
     getch();
     endwin();
-
-//    while(option != 3) {
-//        option = get_option();
-//        if(invalid_option(option))
-//            continue;
-//
-//        (*menu[option-1])(clnt);
-//    }
-
 
 #ifndef	DEBUG
 	clnt_destroy (clnt);
@@ -127,62 +101,36 @@ int
 main (int argc, char *argv[])
 {
 	char *host;
-	if (argc < 2) {
-		printf ("usage: %s server_host\n", argv[0]);
+	if (argc < 3) {
+		printf ("usage: %s <server_host> <username>\n", argv[0]);
 		exit (1);
 	}
 
-	// NCURSES TEST
-    // chat();
-//    draw_chat();
-//    chat();
-//	getch();
-//	endwin();
-//    return 0;
-
-
     host = argv[1];
+	username = argv[2];
+	username_out = malloc(sizeof username_out * sizeof username + 2);
+	username_out = strcpy(username_out, argv[2]);
+	username_out = strcat(username_out, ": ");
+
     rpcchat_0 (host);
     exit (0);
 }
 
-//
-//WINDOW *my_win;
-//char mesg[]="Just a string";            /* message to be appeared on the screen */
-//int startx, starty, width, height;
-//
-//initscr();                              /* start the curses mode */
-//
-//getmaxyx(stdscr,height, width);
-//height +=1;
-//width -= 1;
-////printw("height: %d, width: %d\n", height, width);
-//starty = 0;	/* Calculating for a center placement */
-//startx = 0;	/* of the window		*/
-////    printw("Press F2 to exit");
-//refresh();
-//
-//my_win = create_newwin(height*2/3, width, starty, startx);
-//
-//getch();
-//endwin();
-
 void draw_chat() {
-    char mesg[]="Just a string";            /* message to be appeared on the screen */
     int startx, starty, width, height;
+    // Start ncurses mode
+    initscr();
 
-    initscr();                              /* start the curses mode */
-
+    // Getting terminal size
     getmaxyx(stdscr,height, width);
-//    height +=1;
-//    width -= 1;
-
-    starty = 0;	/* Calculating for a center placement */
-    startx = 0;	/* of the window		*/
-    refresh();
+    starty = 0;
+    startx = 0;
 
     // Output window
-    output_win = create_newwin(height-2, width, starty, startx);
+    output_win = newwin(height-3, width, starty, startx);
+    leaveok(output_win, TRUE);
+    scrollok(output_win, TRUE);
+    // Input window
     input_win  = newwin(2, width, height-1, startx);
 }
 
@@ -200,34 +148,26 @@ void chat(CLIENT* clnt) {
     //cbreak();      // disable line-buffering
     timeout(100);  // wait 100 milliseconds for input
     pthread_t output_thread_id;
-    printf("Before Thread\n");
     pthread_create(&output_thread_id, NULL, print_output, NULL);
 
     while (n != 0) {
-        // refreshing the chat:
+        // refreshing the chat input:
         werase(input_win);
-        werase(output_win);
-        draw_chat();
-        mvwprintw(output_win, 2, 2, "chat: %s", chat);
-        wprintw(input_win, "buf: %s", buf);
-        wrefresh(output_win);
+        wprintw(input_win, "%s --> %s", username, buf);
         wrefresh(input_win);
-
         // getch (with cbreak and timeout as above)
         // waits 100ms and returns ERR if it doesn't read anything.
-        if ((ch = getch()) != ERR) {
+        if ((ch = wgetch(input_win)) != ERR) {
             if (ch == '\n') {
-                getch();
-                mvwprintw(output_win,3, 3, "writing %s", buf);
-                wrefresh(output_win);
-                getch();
                 *s = 0;
                 sscanf(buf, " %[^\n]s", chat);
                 write_chat(clnt, chat);
                 s = buf;
                 *s = 0;
             }
-            else if (ch == KEY_BACKSPACE) {
+            else if (ch == KEY_BACKSPACE || ch == 127 || ch == '\b') {
+                int size = strlen(buf); //Total size of string
+                buf[size-1] = '\0';
                 if (s > buf)
                     *--s = 0;
             }
@@ -246,14 +186,13 @@ void chat(CLIENT* clnt) {
 void *print_output(void* vargp) {
     char * chat = 0;
     int it = 0;
-    while(it < 3){
+    while(1){
         sleep(1);
         chat = read_chat(clnt);
         werase(output_win);
-        draw_chat();
-        mvwprintw(output_win, 2, 2, "chat: %s", chat);
+        //draw_chat();
+        mvwprintw(output_win, 2, 2, "chat: \n%s", chat);
         wrefresh(output_win);
-        it++;
     }
 
 }

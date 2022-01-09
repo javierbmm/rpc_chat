@@ -44,9 +44,15 @@ getchat_0_svc(void *argp, struct svc_req *rqstp)
         return 0;
     }
 
-    fseek (fptr, 0, SEEK_END); // patrá
+    fseek (fptr, 0, SEEK_END); // Beginning
     int length = ftell (fptr) ;
-    fseek (fptr, 0, SEEK_SET); // palante
+    // Verifying length in case it's too big, using a max value of 100
+    const int MAX_LENGTH = 1000;
+    if(length >= MAX_LENGTH) { // Reading the last 100 characters instead
+        length = MAX_LENGTH;
+        fseek (fptr, -length, SEEK_END);
+    } else
+        fseek (fptr, 0, SEEK_SET);
 
     chat = malloc (length+1);
     if (chat) {

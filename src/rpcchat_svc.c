@@ -31,7 +31,7 @@ rpcchat_0(struct svc_req *rqstp, register SVCXPRT *transp)
 		(void) svc_sendreply (transp, (xdrproc_t) xdr_void, (char *)NULL);
 		return;
 
-	case write:
+	case _write:
 		_xdr_argument = (xdrproc_t) xdr_wrapstring;
 		_xdr_result = (xdrproc_t) xdr_status;
 		local = (char *(*)(char *, struct svc_req *)) write_0_svc;

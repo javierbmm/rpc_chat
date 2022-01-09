@@ -24,7 +24,7 @@ typedef enum status status;
 #define rpcchat_version 0
 
 #if defined(__STDC__) || defined(__cplusplus)
-#define write 1
+#define _write 1
 extern  status * write_0(char **, CLIENT *);
 extern  status * write_0_svc(char **, struct svc_req *);
 #define getChat 2
@@ -33,7 +33,7 @@ extern  char ** getchat_0_svc(void *, struct svc_req *);
 extern int rpcchat_0_freeresult (SVCXPRT *, xdrproc_t, caddr_t);
 
 #else /* K&R C */
-#define write 1
+#define _write 1
 extern  status * write_0();
 extern  status * write_0_svc();
 #define getChat 2
